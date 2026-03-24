@@ -250,21 +250,6 @@ Window {
                         id: controlContent
                         width: controlFlick.width - 32; x: 16; y: 20; spacing: 20
 
-                        // MOUSE CONTROLS SECTION
-                        ColumnLayout {
-                            Layout.fillWidth: true; spacing: 8
-                            RowLayout {
-                                Text { text: "🖱️ MOUSE CONTROLS"; color: "#64748b"; font.pixelSize: 13; font.bold: true; font.letterSpacing: 2 }
-                                Rectangle { Layout.fillWidth: true; height: 1; color: "#334155"; Layout.alignment: Qt.AlignVCenter }
-                            }
-                            ColumnLayout {
-                                spacing: 4
-                                Text { text: "Double-click: ADD Location"; color: "#cbd5e1"; font.pixelSize: 13 }
-                                Text { text: "Right-click: REMOVE Location"; color: "#94a3b8"; font.pixelSize: 13 }
-                                Text { text: "Left-drag: MOVE Location"; color: "#94a3b8"; font.pixelSize: 13 }
-                            }
-                        }
-
                         // ALGORITHM SECTION
                         ColumnLayout {
                             Layout.fillWidth: true; spacing: 10
