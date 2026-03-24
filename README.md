@@ -1,5 +1,7 @@
 # TSP Studio
 
+![TSP Studio](assets/TSPStudio.png)
+
 A high-performance, visually-premium Traveling Salesperson Problem (TSP) optimization suite built with **C++17** and **Qt Quick / QML**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -97,7 +99,7 @@ Refer to [THIRD-PARTY.md](THIRD-PARTY.md) for full license details of these comp
 ## 👤 Credits
 
 **Mohamed Elkeran**
-*   Algorithm Design & Optimization.
+*   •Algorithm Design & Optimization.
 
 ---
 
