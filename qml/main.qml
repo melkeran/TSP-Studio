@@ -182,14 +182,17 @@ Window {
                 onDropped: function(d){if(d.hasUrls) guiController.loadTSPFile(d.urls[0])}
             }
             Column {
-                anchors.centerIn:parent; spacing:10; visible: guiController.cityCount === 0
-                Text{text:"Double-click to add cities"; color:"#334155"; font.pixelSize:24; anchors.horizontalCenter:parent.horizontalCenter}
-                Text{text:"Double right-click to zoom fit"; color:"#1e293b"; font.pixelSize:20; anchors.horizontalCenter:parent.horizontalCenter}
-                Text{text:"Right-click to remove"; color:"#1e293b"; font.pixelSize:20; anchors.horizontalCenter:parent.horizontalCenter}
-                Text{text:"Left click & drag to move cities"; color:"#1e293b"; font.pixelSize:20; anchors.horizontalCenter:parent.horizontalCenter}
-                Text{text:"Middle click & drag to pan map"; color:"#1e293b"; font.pixelSize:20; anchors.horizontalCenter:parent.horizontalCenter}
-                Text{text:"Scroll to zoom"; color:"#1e293b"; font.pixelSize:20; anchors.horizontalCenter:parent.horizontalCenter}
-                Text{text:"Drop .tsp file to load"; color:"#1e293b"; font.pixelSize:20; anchors.horizontalCenter:parent.horizontalCenter}
+                anchors.centerIn:parent; spacing:12; visible: guiController.cityCount === 0
+                Text { text: "Welcome to TSP Studio"; color: "#3b82f6"; font.pixelSize: 32; font.bold: true; anchors.horizontalCenter: parent.horizontalCenter }
+                Text { text: "Interactive Mode Active"; color: "#64748b"; font.pixelSize: 18; anchors.horizontalCenter: parent.horizontalCenter }
+                Rectangle { width: 100; height: 1; color: "#334155"; anchors.horizontalCenter: parent.horizontalCenter }
+                
+                Text { text: "🖱️ DOUBLE-CLICK to add locations"; color: "#cbd5e1"; font.pixelSize: 20; font.bold: true; anchors.horizontalCenter: parent.horizontalCenter }
+                Text { text: "🖱️ RIGHT-CLICK city to remove it"; color: "#94a3b8"; font.pixelSize: 18; anchors.horizontalCenter: parent.horizontalCenter }
+                Text { text: "🖱️ DRAG left-click to move cities"; color: "#94a3b8"; font.pixelSize: 18; anchors.horizontalCenter: parent.horizontalCenter }
+                Text { text: "🖱️ MIDDLE-CLICK & drag to pan"; color: "#64748b"; font.pixelSize: 18; anchors.horizontalCenter: parent.horizontalCenter }
+                Text { text: "🖱️ SCROLL to zoom in/out"; color: "#64748b"; font.pixelSize: 18; anchors.horizontalCenter: parent.horizontalCenter }
+                Text { text: "📂 DROP .tsp file to load data"; color: "#64748b"; font.pixelSize: 18; anchors.horizontalCenter: parent.horizontalCenter }
             }
             Rectangle {
                 anchors.top:parent.top; anchors.right:parent.right; anchors.margins:12
@@ -246,6 +249,21 @@ Window {
                     ColumnLayout {
                         id: controlContent
                         width: controlFlick.width - 32; x: 16; y: 20; spacing: 20
+
+                        // MOUSE CONTROLS SECTION
+                        ColumnLayout {
+                            Layout.fillWidth: true; spacing: 8
+                            RowLayout {
+                                Text { text: "🖱️ MOUSE CONTROLS"; color: "#64748b"; font.pixelSize: 13; font.bold: true; font.letterSpacing: 2 }
+                                Rectangle { Layout.fillWidth: true; height: 1; color: "#334155"; Layout.alignment: Qt.AlignVCenter }
+                            }
+                            ColumnLayout {
+                                spacing: 4
+                                Text { text: "Double-click: ADD Location"; color: "#cbd5e1"; font.pixelSize: 13 }
+                                Text { text: "Right-click: REMOVE Location"; color: "#94a3b8"; font.pixelSize: 13 }
+                                Text { text: "Left-drag: MOVE Location"; color: "#94a3b8"; font.pixelSize: 13 }
+                            }
+                        }
 
                         // ALGORITHM SECTION
                         ColumnLayout {

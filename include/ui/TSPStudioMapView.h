@@ -70,9 +70,9 @@ private:
     double m_offsetY = 0.0;
     double m_viewCenterX = 0.0; // Stabilizing origin
     double m_viewCenterY = 0.0;
-    double m_cityRadius = 0.0;
+    double m_cityRadius = 4.0;
 
-    QColor m_cityColor = QColor("#000000");
+    QColor m_cityColor = QColor("#10B981");
     QColor m_routeColor = QColor("#38bdf8");
     QColor m_delaunayColor = QColor("#8b5cf6");
     double m_routeThickness = 1.0;

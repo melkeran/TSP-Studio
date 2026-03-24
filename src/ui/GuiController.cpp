@@ -192,9 +192,9 @@ void GuiController::loadSettings() {
     QSettings s("config.ini", QSettings::IniFormat);
     if (!s.contains("cityPointSize")) return; // No settings yet
     
-    m_cityPointSize = s.value("cityPointSize", 0.0).toDouble();
+    m_cityPointSize = s.value("cityPointSize", 4.0).toDouble();
     m_routeLineThickness = s.value("routeLineThickness", 1.0).toDouble();
-    m_cityColor = s.value("cityColor", QColor("#000000")).value<QColor>();
+    m_cityColor = s.value("cityColor", QColor("#10B981")).value<QColor>();
     m_routeColor = s.value("routeColor", QColor("#38bdf8")).value<QColor>();
     m_delaunayColor = s.value("delaunayColor", QColor("#8b5cf6")).value<QColor>();
     m_lastAlgorithm = s.value("lastAlgorithm", "Iterated Local Search (ILS)").toString();
@@ -216,9 +216,9 @@ void GuiController::loadSettings() {
 void GuiController::resetDefaults() {
     QSettings s("config.ini", QSettings::IniFormat);
     s.clear();
-    m_cityPointSize = 0.0;
+    m_cityPointSize = 4.0;
     m_routeLineThickness = 1.0;
-    m_cityColor = QColor("#000000");
+    m_cityColor = QColor("#10B981");
     m_routeColor = QColor("#38bdf8");
     m_delaunayColor = QColor("#8b5cf6");
     m_lastAlgorithm = "Iterated Local Search (ILS)";

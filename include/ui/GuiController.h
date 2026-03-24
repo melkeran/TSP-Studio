@@ -122,9 +122,9 @@ private:
     bool m_showDelaunay = false;
 
     // Default values
-    double m_cityPointSize = 0.0;
+    double m_cityPointSize = 4.0;
     double m_routeLineThickness = 1.0;
-    QColor m_cityColor = QColor("#000000");
+    QColor m_cityColor = QColor("#10B981");
     QColor m_routeColor = QColor("#38bdf8");
     QColor m_delaunayColor = QColor("#8b5cf6");
     QString m_lastAlgorithm = "Iterated Local Search (ILS)";

@@ -24,6 +24,20 @@ A high-performance, visually-premium Traveling Salesperson Problem (TSP) optimiz
 
 ---
 
+## 🖱️ Interaction & Controls
+
+TSP Studio is designed for an interactive, map-first experience. You can build and manipulate problem sets directly using mouse events:
+
+*   **Double-Click**: Add a new city/location at the cursor's world position.
+*   **Right-Click (on City)**: Remove the selected city.
+*   **Left-Drag (City)**: Move a city in real-time. If a solver is active, it will dynamically re-evaluate.
+*   **Middle-Click & Drag**: Pan around the world space.
+*   **Scroll Wheel**: Zoom in and out of the map.
+*   **Double Right-Click**: Zoom to fit all cities within the current view.
+*   **Drag & Drop**: Simply drop any `.tsp` file (TSPLIB format) anywhere on the map to load it instantly.
+
+---
+
 ## 🎮 Interface & Control Center
 
 The application features a sleek, glassmorphic Control Center on the right, organized logically from top to bottom for a professional workflow:
