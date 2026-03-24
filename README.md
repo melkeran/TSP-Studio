@@ -97,7 +97,7 @@ Refer to [THIRD-PARTY.md](THIRD-PARTY.md) for full license details of these comp
 ## 👤 Credits
 
 **Mohamed Elkeran**
-*   Professional AI & Computer Vision Engineering.
+*   Algorithm Design & Optimization.
 
 ---
 
