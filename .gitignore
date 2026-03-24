@@ -1,0 +1,37 @@
+# Build directories
+build/
+bin/
+obj/
+
+# Qt Creator / Qt temporary files
+*.pro.user
+*.pro.user.*
+.qt/
+.qtcreator/
+CMakeCache.txt
+CMakeFiles/
+CMakeLists.txt.user
+Makefile
+*.pro.user*
+dist/
+release/
+debug/
+
+# IDE specific
+.vscode/
+.vs/
+*.suo
+*.user
+*.user.user
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Project generated
+tsp_trace.log
+config.ini
