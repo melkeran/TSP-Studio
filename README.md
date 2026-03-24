@@ -41,7 +41,7 @@ The application features a sleek, glassmorphic Control Center on the right, orga
 
 ### 3. Problem Management & Map Ops (Bottom)
 *   **File Controls**: Dedicated buttons to **Load TSP** (TSPLIB format) and **Save Tour**.
-*   **Spatial Transformations**: Buttons to **Rotate** (30° increments) or **Flip** the map horizontally/vertically.
+*   **Spatial Transformations**: Buttons to **Rotate** (90° increments) or **Flip** the map horizontally/vertically.
 *   **Visual Parameters**: Control the aesthetic depth with sliders for **City Size**, **Path Thickness**, and **Clear Map**.
 *   **Appearance**: A premium color selection tray to customize the City, Route, and Delaunay colors.
 *   **Metrics Dashboard**: Real-time display of the *Best Distance* and *Elapsed Time* in milliseconds.
@@ -99,7 +99,7 @@ Refer to [THIRD-PARTY.md](THIRD-PARTY.md) for full license details of these comp
 ## 👤 Credits
 
 **Mohamed Elkeran**
-*   •Algorithm Design & Optimization.
+* Algorithm Design & Optimization.
 
 ---
 
