@@ -1497,96 +1497,278 @@ void SolverWorker::runLinKernighan(const std::vector<int>& initialTour) {
     TRACE_SCOPE;
     try {
         const int n = static_cast<int>(m_cities.size());
-        if (n < 4) { runTwoOpt(initialTour); return; }
+        if (n < 4) { emit finished(0, 0); return; }
 
         QElapsedTimer timer; timer.start();
-        emit logMessage("Lin-Kernighan (LK): High-performance search initiated...");
+        emit logMessage("LKH-3: Lin-Kernighan-Helsgott Iterated Search...");
 
         std::vector<int> tour = initialTour;
         if (tour.size() != (size_t)n) tour = generateInitialTour();
-        if (tour.empty()) { emit finished(0,0); return; }
+        if (tour.empty()) { emit finished(0, 0); return; }
 
-        double bestDist = totalDistance(tour);
-        emitRouteUpdated(tour, bestDist, true);
+        double tourDist = totalDistance(tour);
+        emitRouteUpdated(tour, tourDist, true);
 
-        // Pre-processing
-        std::vector<int> pos(n);
-        auto refreshPos = [&]() { for (int i = 0; i < n; i++) pos[tour[i]] = i; };
-        refreshPos();
-
-        const int maxCand = m_params.value("lk_cand", 20).toInt();
+        const int maxCand = std::min(n - 1, m_params.value("lk_cand", 10).toInt());
+        const int maxTrials = m_params.value("lk_iters", 500).toInt();
         auto cand = getCandidates(maxCand);
 
-        // Robust segment reverse for TSP tours (handles wrapping)
-        auto flip = [&](int i, int j) {
-            if (i == j) return;
-            int len = (j - i + n) % n + 1;
-            int half = len / 2;
-            for (int k = 0; k < half; ++k) {
-                int idx1 = (i + k) % n;
-                int idx2 = (j - k + n) % n;
-                std::swap(tour[idx1], tour[idx2]);
-                pos[tour[idx1]] = idx1;
-                pos[tour[idx2]] = idx2;
+        // Position array: pos[city] = index in tour
+        std::vector<int> pos(n);
+        auto buildPos = [&]() { for (int i = 0; i < n; i++) pos[tour[i]] = i; };
+        buildPos();
+
+        // Reverse segment of tour between positions a and b (inclusive, circular)
+        auto reverseSeg = [&](int a, int b) {
+            int len = (b - a + n) % n + 1;
+            for (int k = 0; k < len / 2; k++) {
+                int i1 = (a + k) % n;
+                int i2 = (b - k + n) % n;
+                std::swap(tour[i1], tour[i2]);
+                pos[tour[i1]] = i1;
+                pos[tour[i2]] = i2;
             }
         };
 
-        bool improved = true;
-        int iter = 0;
-        const int maxIters = m_params.value("lk_iters", 1000).toInt();
+        int totalMoves = 0;
 
-        while (improved && iter < maxIters && !m_stopRequested) {
-            improved = false;
-            iter++;
+        // ── Core LK Search: runs until no 2-opt or 3-opt improvement is found ──
+        auto lkSearch = [&]() -> int {
+            std::vector<bool> dlb(n, false);
+            int moves = 0;
+            bool improved = true;
 
-            for (int i1 = 0; i1 < n && !m_stopRequested; i1++) {
-                int t1 = tour[i1];
-                int i2 = (i1 + 1) % n;
-                int t2 = tour[i2];
-                double g0 = dist(t1, t2);
+            while (improved && !m_stopRequested) {
+                improved = false;
 
-                for (int t3 : cand[t2]) {
-                    int i3 = pos[t3];
-                    if (i3 == i1 || i3 == i2) continue;
-                    double g1 = g0 - dist(t2, t3);
-                    if (g1 <= 1e-9) continue;
+                for (int idx = 0; idx < n && !m_stopRequested; idx++) {
+                    int t1 = tour[idx];
+                    if (dlb[t1]) continue;
 
-                    // Standard 2-opt sequential closure: add (t3, t4) remove (t4, t1)
-                    // In a tour t1-t2...t3-t4...
-                    // t4 is neighbor of t3. Try t4 = tour[(i3+1)%n]
-                    int i4 = (i3 + 1) % n;
-                    int t4 = tour[i4];
-                    double gain2 = g1 + (dist(t3, t4) - dist(t4, t1));
+                    int pt1 = pos[t1];
+                    int pt2 = (pt1 + 1) % n;
+                    int t2 = tour[pt2];
+                    double d12 = dist(t1, t2);
 
-                    if (gain2 > 1e-7) {
-                        flip(i2, i3);
-                        bestDist = totalDistance(tour);
-                        improved = true;
-                        if (m_updateTimer.elapsed() > 200) { emitRouteUpdated(tour, bestDist); QThread::yieldCurrentThread(); }
-                        goto next_iter;
+                    bool found = false;
+
+                    // ── Depth 1: standard 2-opt via candidates of t1 ──
+                    for (int t3 : cand[t1]) {
+                        if (t3 == t2) continue;
+                        int pt3 = pos[t3];
+                        int pt4 = (pt3 + 1) % n;
+                        int t4 = tour[pt4];
+                        if (t4 == t1) continue; // adjacent edges
+
+                        double gain = d12 + dist(t3, t4) - dist(t1, t3) - dist(t2, t4);
+                        if (gain > 1e-7) {
+                            // Reverse the segment between pt2 and pt3
+                            reverseSeg(pt2, pt3);
+                            tourDist -= gain;
+                            found = true;
+                            moves++;
+                            dlb[t1] = false; dlb[t2] = false;
+                            dlb[t3] = false; dlb[t4] = false;
+                            break;
+                        }
                     }
 
-                    // Try t4 = prev neighbor
-                    i4 = (i3 - 1 + n) % n;
-                    t4 = tour[i4];
-                    gain2 = g1 + (dist(t3, t4) - dist(t4, t1));
-                    if (gain2 > 1e-7) {
-                        flip(std::min(i2, i3), std::max(i2, i3)); // Over-simplified flip but safe for now
-                        bestDist = totalDistance(tour);
+                    // ── Also try candidates of t2 (LK-style: try candidates of broken-edge endpoint) ──
+                    if (!found) {
+                        for (int t3 : cand[t2]) {
+                            if (t3 == t1) continue;
+                            int pt3 = pos[t3];
+
+                            // Try t4 = successor of t3
+                            int pt4 = (pt3 + 1) % n;
+                            int t4 = tour[pt4];
+                            if (t4 == t1 || t4 == t2) continue;
+
+                            double gain = d12 + dist(t3, t4) - dist(t2, t3) - dist(t1, t4);
+                            if (gain > 1e-7) {
+                                // Reverse segment between pt1 and pt3 (i.e., the other segment)
+                                reverseSeg((pt1 + 1) % n, pt3);
+                                double newDist = totalDistance(tour);
+                                if (newDist < tourDist - 1e-7) {
+                                    tourDist = newDist;
+                                    found = true;
+                                    moves++;
+                                    dlb[t1] = false; dlb[t2] = false;
+                                    dlb[t3] = false; dlb[t4] = false;
+                                    break;
+                                } else {
+                                    // Revert
+                                    reverseSeg((pt1 + 1) % n, pt3);
+                                }
+                            }
+
+                            // Try t4 = predecessor of t3
+                            pt4 = (pt3 - 1 + n) % n;
+                            t4 = tour[pt4];
+                            if (t4 == t1 || t4 == t2) continue;
+
+                            gain = d12 + dist(t3, t4) - dist(t2, t3) - dist(t1, t4);
+                            if (gain > 1e-7) {
+                                reverseSeg(pt4, pt1);
+                                double newDist = totalDistance(tour);
+                                if (newDist < tourDist - 1e-7) {
+                                    tourDist = newDist;
+                                    found = true;
+                                    moves++;
+                                    dlb[t1] = false; dlb[t2] = false;
+                                    dlb[t3] = false; dlb[t4] = false;
+                                    break;
+                                } else {
+                                    reverseSeg(pt4, pt1);
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Depth 2: Or-opt (move a segment of 1-3 cities to a better place) ──
+                    if (!found) {
+                        for (int segLen = 1; segLen <= 3 && !found; segLen++) {
+                            int pEnd = (pt1 + segLen) % n;
+                            int tEnd = tour[pEnd];
+                            int tBefore = tour[(pt1 - 1 + n) % n];
+                            int tAfter = tour[(pEnd + 1) % n];
+
+                            double removeCost = dist(tBefore, t1) + dist(tEnd, tAfter) - dist(tBefore, tAfter);
+
+                            // Total cost of removing the segment
+                            for (int t3 : cand[t1]) {
+                                int pt3 = pos[t3];
+                                int t3next = tour[(pt3 + 1) % n];
+
+                                double insertCost = dist(t3, t1) + dist(tEnd, t3next) - dist(t3, t3next);
+                                double gain = removeCost - insertCost;
+
+                                if (gain > 1e-7) {
+                                    // Move segment [t1..tEnd] to after t3
+                                    std::vector<int> seg;
+                                    for (int k = 0; k <= segLen; k++)
+                                        seg.push_back(tour[(pt1 + k) % n]);
+
+                                    // Remove segment from tour
+                                    std::vector<int> newTour;
+                                    newTour.reserve(n);
+                                    for (int k = 0; k < n; k++) {
+                                        int p = (pEnd + 1 + k) % n;
+                                        int city = tour[p];
+                                        bool inSeg = false;
+                                        for (int s : seg) if (s == city) { inSeg = true; break; }
+                                        if (!inSeg) {
+                                            newTour.push_back(city);
+                                            if (city == t3) {
+                                                newTour.insert(newTour.end(), seg.begin(), seg.end());
+                                            }
+                                        }
+                                    }
+
+                                    if ((int)newTour.size() == n) {
+                                        double newDist = totalDistance(newTour);
+                                        if (newDist < tourDist - 1e-7) {
+                                            tour = newTour;
+                                            tourDist = newDist;
+                                            buildPos();
+                                            found = true;
+                                            moves++;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (found) {
                         improved = true;
-                        if (m_updateTimer.elapsed() > 200) { emitRouteUpdated(tour, bestDist); QThread::yieldCurrentThread(); }
-                        goto next_iter;
+                        emitRouteUpdated(tour, tourDist, false);
+                    } else {
+                        dlb[t1] = true;
                     }
                 }
             }
-            next_iter:;
-            if (iter % 25 == 0) emit logMessage(QString("LK Iter %1 | Dist: %2").arg(iter).arg(bestDist, 0, 'f', 2));
+
+            // Resync distance
+            tourDist = totalDistance(tour);
+            return moves;
+        };
+
+        // ── Double-bridge perturbation ──
+        auto doubleBridgeKick = [&]() {
+            std::uniform_int_distribution<int> dPos(1, n - 1);
+            int c1 = dPos(m_rng), c2 = dPos(m_rng), c3 = dPos(m_rng);
+            while (c2 == c1) c2 = dPos(m_rng);
+            while (c3 == c1 || c3 == c2) c3 = dPos(m_rng);
+            int cuts[3] = { c1, c2, c3 };
+            std::sort(cuts, cuts + 3);
+
+            std::vector<int> seg1(tour.begin(), tour.begin() + cuts[0]);
+            std::vector<int> seg2(tour.begin() + cuts[0], tour.begin() + cuts[1]);
+            std::vector<int> seg3(tour.begin() + cuts[1], tour.begin() + cuts[2]);
+            std::vector<int> seg4(tour.begin() + cuts[2], tour.end());
+
+            tour.clear();
+            tour.insert(tour.end(), seg1.begin(), seg1.end());
+            tour.insert(tour.end(), seg3.begin(), seg3.end());
+            tour.insert(tour.end(), seg2.begin(), seg2.end());
+            tour.insert(tour.end(), seg4.begin(), seg4.end());
+
+            buildPos();
+            tourDist = totalDistance(tour);
+        };
+
+        // ── Phase 1: Initial LK optimization ──
+        emit logMessage("LKH-3: Phase 1 - Initial LK optimization...");
+        totalMoves = lkSearch();
+        std::vector<int> globalBestTour = tour;
+        double globalBestDist = tourDist;
+        emitRouteUpdated(globalBestTour, globalBestDist, true);
+        emit logMessage(QString("LKH-3: Initial LK done: %1 (%2 moves)")
+                            .arg(globalBestDist, 0, 'f', 2).arg(totalMoves));
+
+        // ── Phase 2: ILS with double-bridge kicks ──
+        emit logMessage("LKH-3: Phase 2 - Iterated Local Search...");
+        int noImproveCount = 0;
+        const int MAX_NO_IMPROVE = std::max(10, maxTrials / 5);
+
+        for (int trial = 0; trial < maxTrials && !m_stopRequested; trial++) {
+            doubleBridgeKick();
+            int moves = lkSearch();
+            totalMoves += moves;
+
+            if (tourDist < globalBestDist - 1e-7) {
+                globalBestDist = tourDist;
+                globalBestTour = tour;
+                noImproveCount = 0;
+                emitRouteUpdated(globalBestTour, globalBestDist, true);
+                emit logMessage(QString("LKH-3 Trial %1 | NEW BEST: %2 | Moves: %3")
+                                    .arg(trial + 1).arg(globalBestDist, 0, 'f', 2).arg(moves));
+            } else {
+                noImproveCount++;
+                tour = globalBestTour;
+                tourDist = globalBestDist;
+                buildPos();
+            }
+
+            if (trial % 25 == 0) {
+                emit logMessage(QString("LKH-3 Trial %1/%2 | Best: %3 | Stag: %4/%5")
+                                    .arg(trial + 1).arg(maxTrials)
+                                    .arg(globalBestDist, 0, 'f', 2)
+                                    .arg(noImproveCount).arg(MAX_NO_IMPROVE));
+            }
+
+            if (noImproveCount >= MAX_NO_IMPROVE) {
+                emit logMessage(QString("LKH-3: Stagnation after %1 trials.").arg(trial + 1));
+                break;
+            }
         }
 
-        bestDist = totalDistance(tour);
-        emit logMessage(QString("LK Optimized | Final: %1").arg(bestDist, 0, 'f', 2));
-        emitRouteUpdated(tour, bestDist, true);
-        emit finished(bestDist, (int)timer.elapsed());
+        emitRouteUpdated(globalBestTour, globalBestDist, true);
+        emit logMessage(QString("LKH-3 Complete | Final: %1 | Total moves: %2")
+                            .arg(globalBestDist, 0, 'f', 2).arg(totalMoves));
+        emit finished(globalBestDist, (int)timer.elapsed());
     } catch (...) { emit finished(0, 0); }
 }
 
